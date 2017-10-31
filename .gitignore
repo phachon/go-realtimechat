@@ -1,0 +1,7 @@
+log/*
+.DS_Store
+!.gitignore
+*.exe
+*.exe~
+*.db
+wmq-admin

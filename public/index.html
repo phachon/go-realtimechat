@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>go-realtimechat-demo</title>
+    <link rel="stylesheet" href="/css/bootstrap.css" >
+    <script src="/js/jquery.js" type="text/javascript"></script>
+    <script src="/js/bootstrap.js" type="text/javascript"></script>
+    <script src="/js/socket.io.js" type="text/javascript"></script>
+    <script src="/js/chat.js" type="text/javascript"></script>
+</head>
+<body>
+<hr>
+<div class="col-md-12">
+    <div class="alert alert-danger alert-dismissible fade in" role="alert">
+        <h4>聊天室demo</h4>
+    </div>
+</div>
+<div class="col-md-12">
+    <div class="panel panel-default">
+        <div class="panel-heading">简易聊天室</div>
+        <div class="panel-body">
+            <div class="col-md-7" id="chat_box" style="height:330px;overflow-y: auto;">
+                <!--<div class="alert alert-info alert-dismissible fade in" role="alert" style="padding: 10px 10px;margin-bottom: 10px;">-->
+                    <!--<p>-->
+                        <!--<span class="glyphicon glyphicon-volume-up" aria-hidden="true"></span>-->
+                        <!--<strong>panchao：</strong>-->
+                        <!--初次见面-->
+                    <!--</p>-->
+                <!--</div>-->
+            </div>
+            <div class="col-md-5">
+                <form action="" method="post" onsubmit="return false">
+                    <div class="form-group">
+                        <label>room_id</label>
+                        <input class="form-control" type="text" name="room_id" value=""/>
+                        <label>user_id</label>
+                        <input class="form-control" type="text" name="user_id" value=""/>
+                        <label for="text1">输入聊天内容</label>
+                        <textarea class="form-control" id="text1" name="message" rows="5" cols="10" placeholder="输入聊天内容"></textarea>
+                        <br>
+                        <button type="button" name="submit" onclick="Chat.send()" class="btn btn-primary mar_t15">发送</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    Chat.init();
+</script>
+</body>
+</html>
