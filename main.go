@@ -5,34 +5,14 @@ import (
 	"net/http"
 	"log"
 	"fmt"
+	"encoding/json"
 )
 
-//Room struct
-type Room struct {
-	Id      string
-	Users   []User
-}
-
-//User struct
-type User struct {
-	Id      string
-	Ws      *websocket.Conn
-}
-
-//Message struct
-type Messages struct {
-	Type    int    `json:"type"`
-	Message    string `json:"message"`
-	UserId    string `json:"user_id"`
-}
-
 var (
-	users = []User{}
-	rooms = map[string][]User{}
-	//通道
-	broadcast = make(chan Messages)
-	//升级为websocket
+	// websocket upgrader
 	upgrader = websocket.Upgrader{}
+	// chat
+	chat = NewChat()
 )
 
 //初始化配置
@@ -42,14 +22,17 @@ func init()  {
 
 func main() {
 
-	// 静态文件服务
+	// chat html
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/", fs)
-
-	//处理 websocket 连接
+	// user list
+	http.HandleFunc("/users", userList)
+	// group list
+	http.HandleFunc("/groups", groupList)
+	// handle websocket
 	http.HandleFunc("/ws", handleConnections)
 
-	//开始监听聊天信息
+	// start read message
 	go handleMessages()
 
 	log.Println("http server started on : 8087")
@@ -59,18 +42,34 @@ func main() {
 	}
 }
 
-//处理请求
-func handleConnections(w http.ResponseWriter, r *http.Request) {
+// all user
+//return json
+func userList(w http.ResponseWriter, req *http.Request)  {
+	users := chat.Users()
+	v, _ := json.Marshal(users)
+	w.Write(v)
+}
 
-	userId := r.FormValue("user_id")
-	roomId := r.FormValue("room_id")
+// all group
+// return json
+func groupList(w http.ResponseWriter, req *http.Request)  {
+	groups := chat.Groups()
+	v, _ := json.Marshal(groups)
+	w.Write(v)
+}
+
+// handle ws conn
+func handleConnections(w http.ResponseWriter, req *http.Request) {
+
+	userId := req.FormValue("user_id")
+	roomId := req.FormValue("room_id")
 	if(userId == "") {
 		return
 	}
 	if(roomId == "") {
 		return
 	}
-	fmt.Println("room_id : "+ roomId +" user_id: "+ userId +" come in!")
+	log.Println("room_id : "+ roomId +" user_id: "+ userId +" come in!")
 
 	//将 get 请求升级为 websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -80,47 +79,41 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
-	//开始注册
-	user := &User{
-		Id: userId,
-		Ws: ws,
-	}
-	users = append(users, *user)
-	rooms[roomId] = append(rooms[roomId], *user)
+	// add group
+	chat.AddGroup(roomId, "default_"+roomId)
+	// add user
+	chat.AddUser(userId, roomId, "user_"+userId, ws)
 
-	//开始处理消息
 	for {
-		//读取 json 消息
+		// read ws json data
 		var msg Messages
 		err := ws.ReadJSON(&msg)
 		if(err != nil) {
 			log.Println(err.Error())
+			log.Println("room_id : "+ roomId +" user_id: "+ userId +" exit!")
+			chat.DeleteUser(userId)
+			break
 		}
-		//发送消息到channel
-		broadcast <- msg
-	}
 
+		// send message to messageChan
+		chat.MessageChan <- msg
+	}
 }
 
-
-//处理消息
+// handle read message
 func handleMessages()  {
 	for {
-		//从 channel 读取消息
-		//读取 json 消息
+		// read message from chat messageChan
 		var msg Messages
-		msg = <- broadcast
+		msg = <- chat.MessageChan
 
-		//广播给所有房间的所有人
-		for _, users := range rooms {
-			//roomId := room.Id
-			for _, user := range users {
-				ws := user.Ws
-				err := ws.WriteJSON(msg)
-				if(err != nil) {
-					log.Printf("error: %v", err)
-					ws.Close()
-				}
+		// 暂时先广播给所有房间的所有人
+		for _, user := range chat.Users() {
+			ws := user.Ws
+			err := ws.WriteJSON(msg)
+			if(err != nil) {
+				chat.DeleteUser(user.Id)
+				log.Printf("error: %v", err)
 			}
 		}
 	}
