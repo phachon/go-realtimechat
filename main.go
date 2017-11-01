@@ -72,7 +72,7 @@ func handleConnections(w http.ResponseWriter, req *http.Request) {
 	log.Println("room_id : "+ roomId +" user_id: "+ userId +" come in!")
 
 	//将 get 请求升级为 websocket
-	ws, err := upgrader.Upgrade(w, r, nil)
+	ws, err := upgrader.Upgrade(w, req, nil)
 	if(err != nil) {
 		fmt.Println("请求出错:" + err.Error())
 		return
