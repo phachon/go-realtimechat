@@ -1,5 +1,5 @@
-# Wmq-Admin
-go 弹幕服务
+# go-realtimechat
+go 聊天服务
 
 ## 运行
 go build ./
